@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "e2b-sandbox": {
+      "command": "uv",
+      "args": ["run", "python", "server.py"],
+      "cwd": "./apps/sandbox_mcp",
+      "env": {
+        "E2B_API_KEY": "your-e2b-api-key-here"
+      }
+    }
+  }
+}
+

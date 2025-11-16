@@ -1,0 +1,10 @@
+[project]
+name = "e2b-sandbox-mcp-server"
+version = "0.1.0"
+description = "MCP server that wraps the E2B Sandbox CLI for agent sandbox access"
+readme = "README.md"
+requires-python = ">=3.12"
+
+dependencies = [
+    "mcp>=1.0.0",
+]
