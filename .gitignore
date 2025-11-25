@@ -15,7 +15,6 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
 lib64/
 parts/
 sdist/
@@ -75,16 +74,15 @@ out/
 
 # OS
 Thumbs.db
+.DS_Store
 
-
-ai_docs/*
-!ai_docs/README.md
-
+# Ignore .mcp.json files (contain API keys)
 .mcp.json
+working_dir/.mcp.json
 
 temp/
 tmp/
 
-apps/sandbox_agent_working_dir/specs/
-
-adws/
+# Runtime data (agent execution logs and generated files)
+runtime/*
+!runtime/README.md

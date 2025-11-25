@@ -1,208 +1,242 @@
 # Agent Sandboxes
 >
-> Here we explore e2b agent sandboxes and claude code together to scale your agentic engineering.
+> Scale your agentic engineering with E2B sandboxes and Claude Code
 >
-> Watch the full video where we break down agent sandboxes and claude code [here](https://youtu.be/1ECn5zrVUB4)
 
-Using Agent Sandboxes (E2B) for complete agentic engineering control.
+## Why Agent Sandboxes?
 
-<img src="images/agent_sandboxes_snapshot.png" alt="Agent Sandboxes Architecture Diagram" width="800">
+Agent Sandboxes unlock 3 key capabilities for your agentic engineering:
 
-## Value Proposition
-> 
-> Agent Sandboxes unlock 3 key capabilities for your agentic engineering:
+- **Isolation**: Each agent fork runs in a fully isolated, gated E2B sandbox. No matter what your agent does, it's secure and safe from your local filesystem and production environment.
+- **Scale**: Run as many agent forks as you want in parallel. Each fork is independent with its own sandbox. This is a literal way to scale your compute to scale your impact.
+- **Agency**: Your agents have full control over the sandbox environment - install packages, modify files, run commands, etc. They can handle more of the engineering process for you.
 
-- **Isolation**: Each agent fork runs in a fully isolated, gated E2B sandbox, this means no matter what your agent does, it's secure and safe from your local filesystem and production environment.
-- **Scale**: You can run as many agent forks as you want, each fork is independent and has its own sandbox. This is a very literal way to scale your compute to scale your impact.
-- **Agency**: Your agents have full control over the sandbox environment, they can install packages, modify files, run commands, etc. This means they can handle more of the engineering process for you.
+## Quick Start with OBOX
 
-## Apps
+**OBOX** (Orchestrated Sandbox) is the main tool - it runs parallel Claude Code agent experiments on git repositories using isolated E2B sandboxes.
 
-- `sandbox_workflows/` - **obox**: Run parallel agent forks in isolated E2B sandboxes for experimentation
-- `sandbox_mcp/` - MCP server wrapping sandbox_cli for LLM integration (works from root)
-- `sandbox_cli/` - Click CLI for E2B sandbox management (init, exec, files, lifecycle)
-- `sandbox_fundamentals/` - E2B SDK learning examples and patterns
-- `cc_in_sandbox/` - Run Claude Code agent inside an E2B sandbox (ibox: in box agent)
-- `sandbox_agent_working_dir/` - Agent runtime working directory
-
-## Agent Sandbox Tooling Choice
-
-Using **[e2b](https://e2b.dev/)** (General Sandbox SDK) for:
-- Full control over sandbox environment
-- Shell command execution
-- File system operations
-- Running tools (Claude Code, git, npm, etc.)
-
-## Quick Start
-
-### 1. Global Environment Setup
-
-Create a `.env` file in the project root with the following API keys:
-
-```bash
-# Required for all sandbox operations
-E2B_API_KEY=your_e2b_api_key_here
-
-# Authentication for Claude Code in sandboxes
-# Different apps use different authentication methods:
-# - run_claude_in_sandbox.py: Uses CLAUDE_CODE_OAUTH_TOKEN only
-# - 09_claude_code_agent.py: Uses ANTHROPIC_API_KEY only
-# - agents.py (obox workflows): Tries CLAUDE_CODE_OAUTH_TOKEN first, falls back to ANTHROPIC_API_KEY
-
-# Claude Code OAuth Token (preferred for most apps)
-# Get your token by running: claude setup-token
-# Or from: https://claude.ai/settings
-CLAUDE_CODE_OAUTH_TOKEN=your_claude_code_oauth_token_here
-
-# Anthropic API Key (alternative/fallback for some apps)
-ANTHROPIC_API_KEY=your_anthropic_api_key_here
-
-# Optional: Required for git push/PR functionality
-GITHUB_TOKEN=your_github_token_here
-```
-
-**Install the top Agentic Coding Tool:**
-- **Claude Code**: [https://www.claude.com/product/claude-code](https://www.claude.com/product/claude-code)
+### 1. Setup (One Time)
 
 **Get your API keys:**
-- **E2B API Key**: [https://e2b.dev/docs](https://e2b.dev/docs) - Sign up and get your API key
-- **Claude Code OAuth Token**: [https://claude.ai/settings](https://claude.ai/settings) - or run: `claude setup-token`
-- **GitHub Token**: [https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens) - Create a personal access token with `repo` scope
+- **E2B API Key**: [https://e2b.dev/docs](https://e2b.dev/docs)
+- **Claude Code OAuth Token**: Run `claude setup-token` or get from [https://claude.ai/settings](https://claude.ai/settings)
+- **GitHub Token** (optional): [Create personal access token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)
 
-### 2. Application Usage
-
-I recommend working from the atoms of the codebase (e2b fundamentals, cli, mcp) to the full e2e sandbox workflow (obox workflows).
-
-**Process:**
-1. Setup environment variables
-2. Explore E2B Fundamentals `apps/sandbox_fundamentals/`
-3. Explore E2B CLI `apps/sandbox_cli/`
-4. Explore E2B MCP `apps/sandbox_mcp/`
-5. Explore E2B Workflow `apps/sandbox_workflows/`
-
-#### Explore E2B Fundamentals - `apps/sandbox_fundamentals/`
-
-> **Start Here**
-
-Recommended: Walk through all example scripts to understand E2B sandbox concepts.
+**Configure environment:**
 
 ```bash
-cd apps/sandbox_fundamentals
+# Step 1: Setup environment variables
+cp .env.example .env
+
+# Edit .env file and add your API keys
+# Required: E2B_API_KEY, CLAUDE_CODE_OAUTH_TOKEN (or ANTHROPIC_API_KEY)
+# Optional: GITHUB_TOKEN
+
+# Step 2: Setup MCP server configuration
+cp working_dir/.mcp.json.example working_dir/.mcp.json
+
+# Edit working_dir/.mcp.json and replace "your-e2b-api-key-here" with your actual E2B API key
+```
+
+> **Important**: The `.mcp.json` file contains your E2B API key and should never be committed to git (it's in `.gitignore`).
+
+**Install dependencies:**
+
+```bash
+cd apps/obox
+uv sync
+```
+
+### 2. Run Your First Experiment
+
+```bash
+# Single fork experiment
+uv run obox https://github.com/user/repo \
+  --prompt "Add comprehensive unit tests for all utility functions"
+
+# Run 3 parallel experiments
+uv run obox https://github.com/user/repo \
+  --prompt "Refactor the authentication module to use async/await" \
+  --forks 3
+
+# Use different models
+uv run obox https://github.com/user/repo \
+  --prompt "Quick code review" \
+  --model haiku  # Options: opus, sonnet, haiku
+
+# Specify branch
+uv run obox https://github.com/user/repo \
+  --branch feature/new-api \
+  --prompt "Review and document the API endpoints"
+```
+
+### 3. Monitor Execution
+
+OBOX automatically:
+- Creates isolated E2B sandboxes for each fork
+- Clones your repository into each sandbox
+- Runs Claude Code agents with your prompt
+- Logs all activity to `runtime/agent_workspaces/logs/`
+- Opens log files in VSCode for real-time monitoring
+- Displays summary table with costs, tokens, and status
+
+## How It Works
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  Your Machine (obox)                                    │
+│                                                         │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐   │
+│  │ Claude Agent│  │ Claude Agent│  │ Claude Agent│   │
+│  │  Thread 1   │  │  Thread 2   │  │  Thread 3   │   │
+│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘   │
+│         │                │                │           │
+└─────────┼────────────────┼────────────────┼───────────┘
+          │ MCP Tools      │ MCP Tools      │ MCP Tools
+          ▼                ▼                ▼
+┌─────────────────────────────────────────────────────────┐
+│  E2B Cloud Sandboxes (isolated environments)            │
+│                                                         │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐   │
+│  │  Sandbox 1  │  │  Sandbox 2  │  │  Sandbox 3  │   │
+│  │             │  │             │  │             │   │
+│  │ git repo    │  │ git repo    │  │ git repo    │   │
+│  │ branch-1    │  │ branch-2    │  │ branch-3    │   │
+│  └─────────────┘  └─────────────┘  └─────────────┘   │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Key Features:**
+- **Parallel Execution**: Run 1-100 forks in parallel threads
+- **Auto-Branch Generation**: Unique branches for each fork
+- **Full Observability**: Detailed logs capture every tool use
+- **Cost Tracking**: Per-fork and total cost/token tracking
+- **Path Security**: Hook-based restrictions prevent local file access
+- **Project Commands**: Agents can use custom slash commands (`/plan`, `/build`, `/wf_plan_build`)
+
+See [apps/obox/README.md](apps/obox/README.md) for complete documentation.
+
+## Project Structure
+
+### Core Apps
+- **[apps/obox/](apps/obox/)** - **OBOX**: Run parallel agent forks in isolated E2B sandboxes (recommended starting point)
+- **[apps/mcp/](apps/mcp/)** - MCP server wrapping E2B CLI for Claude Desktop integration
+- **[apps/cli/](apps/cli/)** - Command-line interface for E2B sandbox management
+- **[apps/cc_in_sandbox/](apps/cc_in_sandbox/)** - Example: Run Claude Code agent inside an E2B sandbox
+
+### Shared Libraries
+- **[lib/](lib/)** - Shared library (`sandbox-common`) for configuration, logging, and utilities
+
+### Configuration & Runtime
+- `.env.example` - Environment variable template - copy to `.env` in root (and `working_dir/.env` optional)
+- `working_dir/.mcp.json.example` - MCP server configuration template (copy to `working_dir/.mcp.json`)
+- `working_dir/` - Agent configuration directory (slash commands, configs)
+- `runtime/` - Runtime data directory (gitignored)
+  - `runtime/agent_workspaces/logs/` - Agent execution logs
+  - `runtime/agent_workspaces/specs/` - Generated specification files
+  - `runtime/agent_workspaces/temp/` - Temporary files
+
+## Architecture
+
+### Claude Code in Sandbox (Example)
+
+**Note**: This is an example/reference implementation showing how you can run Claude Code entirely inside a sandbox. For most use cases, use **obox** instead.
+
+See [apps/cc_in_sandbox/README.md](apps/cc_in_sandbox/README.md) for details.
+
+## Where Calude Runs
+
+| App | Claude Execution Location | Repository Location | How It Works |
+|-----|---------------------------|---------------------|--------------|
+| **`obox/`** | Local machine | Inside E2B sandbox | Claude Code agent runs on your local machine but uses MCP tools to remotely operate on repositories cloned inside E2B sandboxes. Hybrid tool access: MCP for sandbox operations + local tools for permitted directories. |
+| **`cc_in_sandbox/`** | Inside E2B sandbox | Inside E2B sandbox | Claude Code CLI is installed and runs directly inside the sandbox. All operations are local to the sandbox environment. |
+
+**In summary:**
+- **`obox`**: Claude lives on your machine, works on sandboxed repos (orchestrated remote execution) - **recommended**
+- **`cc_in_sandbox`**: Claude lives in the sandbox (fully isolated execution) - **example/reference**
+
+## Other Tools
+
+### MCP Server for Claude Desktop
+
+Use E2B sandboxes directly in Claude Desktop conversations:
+
+```bash
+cd apps/mcp
+
+# Test with MCP Inspector
+uv run mcp dev server.py
+
+# Install for Claude Desktop
+uv run mcp install server.py
+```
+
+Then in Claude Desktop:
+```
+"Create a Python sandbox and install pandas"
+"Upload my data.csv and run analysis.py"
+"Clone this repo and run the tests"
+```
+
+See [apps/mcp/README.md](apps/mcp/README.md) for complete documentation.
+
+### CLI for Direct Sandbox Management
+
+Direct command-line control of E2B sandboxes:
+
+```bash
+cd apps/cli
 uv sync
 
-# Run through all examples in order
-uv run python 01_basic_sandbox.py
-uv run python 01_basic_sandbox_keep_alive.py
-uv run python 02_list_files.py
-uv run python 03_file_operations.py
-uv run python 04_run_commands.py
-uv run python 05_environment_vars.py
-uv run python 06_background_commands.py
-uv run python 07_reuse_sandbox.py
-uv run python 08_pause_resume.py
-uv run python 09_claude_code_agent.py
-uv run python 10_install_packages.py
-uv run python 11_git_operations.py
-uv run python 12_custom_template_build.py
-uv run python 12_custom_template_reuse.py
-uv run python 13_expose_simple_webserver.py
-uv run python 13_expose_vite_vue_webserver.py
+# Initialize a sandbox
+uv run sbx init
+export SANDBOX_ID=$(cat .sandbox_id)
+
+# Execute commands
+uv run sbx exec $SANDBOX_ID "python --version"
+uv run sbx exec $SANDBOX_ID "pip install requests" --root
+
+# File operations
+uv run sbx files write $SANDBOX_ID /home/user/test.py "print('hello')"
+uv run sbx files read $SANDBOX_ID /home/user/test.py
+
+# Run code
+uv run sbx exec $SANDBOX_ID "python /home/user/test.py"
 ```
 
-#### Use CLI for Sandbox Management - `apps/sandbox_cli/`
+See [apps/cli/README.md](apps/cli/README.md) for complete documentation.
+
+## Testing
+
+Each app includes smoke tests to verify basic functionality:
+
 ```bash
-cd apps/sandbox_cli
+# Test CLI
+cd apps/cli
 uv sync
+uv run pytest tests/ -v
 
-# Get help
-uv run python src/main.py --help
-
-# Initialize a new sandbox
-uv run python src/main.py init
-
-# Create a sandbox with custom template (this is an e2b sandbox template - you can create this by running the `uv run python 12_custom_template_build.py` script)
-uv run python src/main.py sandbox create --template agent-sandbox-dev-node22
-
-# Execute a command in a sandbox
-uv run python src/main.py exec <sandbox-id> "ls -la"
-
-# List files in a sandbox
-uv run python src/main.py files ls <sandbox-id> /
-```
-
-You can also boot up a claude code agent and run `/prime_cli_sandbox.md` - then prompt your agent to run the commands for you.
-
-#### Use MCP Server with Claude Desktop - `apps/sandbox_mcp/`
-Works from project root - MCP server is configured in your Claude Desktop config.
-```bash
-# cp the .mcp.json.sandbox to .mcp.json
-cp .mcp.json.sandbox .mcp.json
-
-# replace your e2b api key in the .mcp.json env section
-...
-
-# Start a claude code agent with the .mcp.json
-claude
-
-# Check the mcp server status
-/mcp
-
-# Prompt the same commands as you would with the sandbox_cli with natural language
-prompt: What can we do with the e2b sandbox tools?
-
-prompt: init a new sandbox
-
-prompt: create a sandbox with custom template agent-sandbox-dev-node22
-
-prompt: run ls -la in the sandbox
-
-prompt: search for all .py files in the sandbox with exec
-
-# Run custom slash commands
-prompt: /plan Add buttons to the nav bar that auto scroll to respective sections on the landing page
-
-prompt: /build <path-to-plan>
-
-prompt: /wf_plan_build Add buttons to the nav bar that auto scroll to respective sections on the landing page
-
-```
-
-#### Run Parallel Agent Experiments - **obox** - `apps/sandbox_workflows/`
-```bash
-cp .mcp.json apps/sandbox_agent_working_dir/.mcp.json (after you fill it out with your e2b api key)
-cp .env apps/sandbox_agent_working_dir/.env (after you fill it out with your credentials)
-
-cd apps/sandbox_workflows
+# Test MCP Server
+cd apps/mcp
 uv sync
-uv run obox <repo-url> --branch <branch> --model <opus|sonnet|haiku> --prompt "your task" --forks 3
+uv run pytest tests/ -v
+
+# Test OBOX
+cd apps/obox
+uv sync
+uv run pytest tests/ -v
 ```
 
-You can also boot up a claude code agent and run `/prime_obox.md` - then prompt your agent to run the commands for you.
-
-See `apps/*/README.md` for detailed documentation on each tool.
-
-## Application Notes
-
-### obox - `apps/sandbox_workflows/`
-
-- There are two system prompts for the custom agent that drives the sandbox engineering
-  - `apps/sandbox_workflows/src/prompts/sandbox_fork_agent_w_github_token_system_prompt.md` - Supports GitHub token auth for git push/PR functionality
-  - `apps/sandbox_workflows/src/prompts/sandbox_fork_agent_system_prompt.md` - Basic system prompt for sandbox engineering, does not have git push/PR functionality
-  - You can either use specific prompt workflows (see `apps/sandbox_agent_working_dir/.claude/commands/wf_plan_build.md`) to manage git operations, or you can use the system prompt.
-- The agents working directory is `apps/sandbox_agent_working_dir/` see `apps/sandbox_workflows/src/modules/constants.py` for more details.
-  - That means that `apps/sandbox_agent_working_dir/./claude/commands/` are the available slash commands for the agent (and all the other claude capabilities are active there too)
+**Requirements**: Tests require `.env` files to be configured with valid API keys. See setup instructions above.
 
 ## Resources
 
 - https://e2b.dev/
 - https://www.claude.com/product/claude-code
 - https://docs.claude.com/en/docs/agent-sdk/python
-- See `ai_docs/README.md` for resources used to build this codebase.
 
-## Master **Agentic Coding**
-> Prepare for the future of software engineering
+## Acknowledgements
 
-Learn tactical agentic coding patterns with [Tactical Agentic Coding](https://agenticengineer.com/tactical-agentic-coding?y=agsbx)
-
-Follow the [IndyDevDan YouTube channel](https://www.youtube.com/@indydevdan) to improve your agentic coding advantage.
-
+- Forked from https://github.com/disler/agent-sandboxes by IndyDevDan
+- Watch the full video walkthrough: [Agent Sandboxes with Claude Code](https://youtu.be/1ECn5zrVUB4)
+- Follow the [IndyDevDan YouTube channel](https://www.youtube.com/@indydevdan) 
